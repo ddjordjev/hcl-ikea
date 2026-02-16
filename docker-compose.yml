@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: hcl-ikea-postgres
+    environment:
+      POSTGRES_USER: quarkus_test
+      POSTGRES_PASSWORD: quarkus_test
+      POSTGRES_DB: quarkus_test
+      POSTGRES_INITDB_ARGS: "-c timezone=UTC"
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./java-assignment/src/main/resources/import.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quarkus_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hcl-network
+
+networks:
+  hcl-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

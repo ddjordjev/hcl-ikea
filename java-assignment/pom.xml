@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.inventorix</groupId>
     <artifactId>java-code-assignment</artifactId>
@@ -10,8 +10,9 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.13.3</quarkus.platform.version>
-        <surefire-plugin.version>3.1.2</surefire-plugin.version>
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <surefire-plugin.version>3.1.2</surefire-plugin.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
@@ -43,7 +44,20 @@
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
 
-        <!-- Testing: -->
+        <!-- Health endpoints (/q/health, /q/health/ready, /q/health/live) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+
+        <!-- API codegen -->
+        <dependency>
+            <groupId>io.quarkiverse.openapi.generator</groupId>
+            <artifactId>quarkus-openapi-generator-server</artifactId>
+            <version>2.4.7</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -54,13 +68,6 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>io.quarkiverse.openapi.generator</groupId>
-            <artifactId>quarkus-openapi-generator-server</artifactId>
-            <version>2.4.7</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -76,18 +83,45 @@
                 </configuration>
             </plugin>
             <plugin>
-                <!-- you need this specific version to integrate with the other build helpers -->
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+
+            <!-- Integration tests (Failsafe): runs *IT.java -->
             <plugin>
-                <!-- This is what injects the magic Quarkus bytecode -->
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/*IT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>${maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Quarkus build + codegen -->
+            <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.platform.version}</version>
@@ -101,6 +135,8 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Generated sources -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -113,8 +149,71 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${project.build.directory}/generated-sources/src/main/java</source>
+                                <source>${project.build.directory}/generated-sources/jaxrs</source>
                             </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Coverage -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <!-- Attach JaCoCo agent for unit tests (surefire) -->
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Attach JaCoCo agent for integration tests (failsafe), appending to the same exec file -->
+                    <execution>
+                        <id>prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                        <configuration>
+                            <destFile>${project.build.directory}/jacoco.exec</destFile>
+                            <append>true</append>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate coverage report after all tests -->
+                    <execution>
+                        <id>report</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes>
+                                        <include>com.fulfilment.application.monolith.location</include>
+                                        <include>com.fulfilment.application.monolith.warehouses.domain.usecases</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
                         </configuration>
                     </execution>
                 </executions>
@@ -171,7 +270,7 @@
             <build>
                 <pluginManagement>
                     <plugins>
-                        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                        <!-- Eclipse m2e only; no influence on Maven build -->
                         <plugin>
                             <groupId>org.eclipse.m2e</groupId>
                             <artifactId>lifecycle-mapping</artifactId>
@@ -194,7 +293,7 @@
                                                 </goals>
                                             </pluginExecutionFilter>
                                             <action>
-                                                <ignore></ignore>
+                                                <ignore/>
                                             </action>
                                         </pluginExecution>
                                     </pluginExecutions>
