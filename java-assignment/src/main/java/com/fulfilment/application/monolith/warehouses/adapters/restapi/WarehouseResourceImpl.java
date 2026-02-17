@@ -12,9 +12,12 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
+
+  private static final Logger LOGGER = Logger.getLogger(WarehouseResourceImpl.class);
 
   @Inject WarehouseRepository warehouseRepository;
   @Inject CreateWarehouse createWarehouse;
@@ -29,6 +32,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Override
   @Transactional
   public Warehouse createANewWarehouseUnit(@NotNull Warehouse data) {
+    LOGGER.infof("Creating warehouse %s", data.getBusinessUnitCode());
     com.fulfilment.application.monolith.warehouses.domain.models.Warehouse domain = toDomain(data);
     createWarehouse.create(domain);
 
@@ -41,6 +45,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public Warehouse getAWarehouseUnitByID(String id) {
+    LOGGER.debugf("Fetching warehouse %s", id);
     var found = warehouseRepository.findByBusinessUnitCode(id);
     if (found == null) {
       throw new WebApplicationException("Warehouse not found", 404);
@@ -51,16 +56,14 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Override
   @Transactional
   public void archiveAWarehouseUnitByID(String id) {
-    var found = warehouseRepository.findByBusinessUnitCode(id);
-    if (found == null) {
-      throw new WebApplicationException("Warehouse not found", 404);
-    }
-    archiveWarehouse.archive(found);
+    LOGGER.infof("Archiving warehouse %s", id);
+    archiveWarehouse.archive(id);
   }
 
   @Override
   @Transactional
   public Warehouse replaceTheCurrentActiveWarehouse(String businessUnitCode, @NotNull Warehouse data) {
+    LOGGER.infof("Replacing warehouse %s", businessUnitCode);
     com.fulfilment.application.monolith.warehouses.domain.models.Warehouse domain = toDomain(data);
     domain.businessUnitCode = businessUnitCode;
 

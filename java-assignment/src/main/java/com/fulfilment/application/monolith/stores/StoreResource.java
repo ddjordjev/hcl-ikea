@@ -1,10 +1,11 @@
 package com.fulfilment.application.monolith.stores;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import static jakarta.transaction.Status.STATUS_COMMITTED;
+
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Synchronization;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -17,13 +18,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 import org.jboss.logging.Logger;
-import jakarta.transaction.TransactionSynchronizationRegistry;
-import jakarta.transaction.Synchronization;
-import static jakarta.transaction.Status.STATUS_COMMITTED;
 
 @Path("store")
 @ApplicationScoped
@@ -44,6 +40,7 @@ public class StoreResource {
   @GET
   @Path("{id}")
   public Store getSingle(Long id) {
+    LOGGER.debugf("Fetching store %d", id);
     Store entity = Store.findById(id);
     if (entity == null) {
       throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
@@ -59,6 +56,7 @@ public class StoreResource {
     }
 
     store.persist();
+    LOGGER.infof("Created store %s", store.name);
 
     runAfterCommit(() -> legacyStoreManagerGateway.createStoreOnLegacySystem(store));
 
@@ -81,6 +79,7 @@ public class StoreResource {
 
     entity.name = updatedStore.name;
     entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+    LOGGER.infof("Updated store %d", id);
 
     runAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
 
@@ -102,6 +101,7 @@ public class StoreResource {
     }
 
     entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
+    LOGGER.infof("Patched store %d", id);
 
     runAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
 
@@ -117,6 +117,7 @@ public class StoreResource {
       throw new WebApplicationException("Store with id of " + id + " does not exist.", 404);
     }
     entity.delete();
+    LOGGER.infof("Deleted store %d", id);
 
     runAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
 
@@ -144,29 +145,4 @@ public class StoreResource {
             });
   }
 
-  @Provider
-  public static class ErrorMapper implements ExceptionMapper<Exception> {
-
-    @Inject ObjectMapper objectMapper;
-
-    @Override
-    public Response toResponse(Exception exception) {
-      LOGGER.error("Failed to handle request", exception);
-
-      int code = 500;
-      if (exception instanceof WebApplicationException) {
-        code = ((WebApplicationException) exception).getResponse().getStatus();
-      }
-
-      ObjectNode exceptionJson = objectMapper.createObjectNode();
-      exceptionJson.put("exceptionType", exception.getClass().getName());
-      exceptionJson.put("code", code);
-
-      if (exception.getMessage() != null) {
-        exceptionJson.put("error", exception.getMessage());
-      }
-
-      return Response.status(code).entity(exceptionJson).build();
-    }
-  }
 }

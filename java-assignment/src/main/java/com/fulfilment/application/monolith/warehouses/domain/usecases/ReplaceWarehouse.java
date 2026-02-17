@@ -6,9 +6,12 @@ import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStor
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import java.time.LocalDateTime;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ReplaceWarehouse implements ReplaceWarehouseOperation {
+
+  private static final Logger LOGGER = Logger.getLogger(ReplaceWarehouse.class);
 
   private final WarehouseStore warehouseStore;
 
@@ -18,21 +21,7 @@ public class ReplaceWarehouse implements ReplaceWarehouseOperation {
 
   @Override
   public void replace(Warehouse newWarehouse) {
-    if (newWarehouse == null) {
-      throw new WebApplicationException("Warehouse payload is required", 422);
-    }
-    if (newWarehouse.businessUnitCode == null || newWarehouse.businessUnitCode.isBlank()) {
-      throw new WebApplicationException("businessUnitCode is required", 422);
-    }
-    if (newWarehouse.capacity == null || newWarehouse.capacity <= 0) {
-      throw new WebApplicationException("capacity must be > 0", 422);
-    }
-    if (newWarehouse.stock == null || newWarehouse.stock < 0) {
-      throw new WebApplicationException("stock must be >= 0", 422);
-    }
-    if (newWarehouse.location == null || newWarehouse.location.isBlank()) {
-      throw new WebApplicationException("location is required", 422);
-    }
+    WarehouseValidator.validateRequiredFields(newWarehouse);
 
     Warehouse current = warehouseStore.findByBusinessUnitCode(newWarehouse.businessUnitCode);
     if (current == null) {
@@ -63,5 +52,7 @@ public class ReplaceWarehouse implements ReplaceWarehouseOperation {
     replacement.archivedAt = null;
 
     warehouseStore.create(replacement);
+
+    LOGGER.infof("Replaced warehouse %s, new capacity %d", current.businessUnitCode, newWarehouse.capacity);
   }
 }

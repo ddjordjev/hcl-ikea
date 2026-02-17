@@ -9,9 +9,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class CreateWarehouse implements CreateWarehouseOperation {
+
+  private static final Logger LOGGER = Logger.getLogger(CreateWarehouse.class);
 
   private final WarehouseStore warehouseStore;
   private final LocationResolver locationResolver;
@@ -23,7 +26,7 @@ public class CreateWarehouse implements CreateWarehouseOperation {
 
   @Override
   public void create(Warehouse warehouse) {
-    validateRequiredFields(warehouse);
+    WarehouseValidator.validateRequiredFields(warehouse);
 
     if (warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode) != null) {
       throw new WebApplicationException("businessUnitCode already exists", 409);
@@ -37,7 +40,6 @@ public class CreateWarehouse implements CreateWarehouseOperation {
     List<Warehouse> all = warehouseStore.getAll();
     List<Warehouse> activeAtLocation =
         all.stream()
-            .filter(w -> w != null)
             .filter(w -> w.archivedAt == null)
             .filter(w -> warehouse.location.equals(w.location))
             .toList();
@@ -63,23 +65,7 @@ public class CreateWarehouse implements CreateWarehouseOperation {
     warehouse.archivedAt = null;
 
     warehouseStore.create(warehouse);
-  }
 
-  private static void validateRequiredFields(Warehouse warehouse) {
-    if (warehouse == null) {
-      throw new WebApplicationException("Warehouse payload is required", 422);
-    }
-    if (warehouse.businessUnitCode == null || warehouse.businessUnitCode.isBlank()) {
-      throw new WebApplicationException("businessUnitCode is required", 422);
-    }
-    if (warehouse.location == null || warehouse.location.isBlank()) {
-      throw new WebApplicationException("location is required", 422);
-    }
-    if (warehouse.capacity == null || warehouse.capacity <= 0) {
-      throw new WebApplicationException("capacity must be > 0", 422);
-    }
-    if (warehouse.stock == null || warehouse.stock < 0) {
-      throw new WebApplicationException("stock must be >= 0", 422);
-    }
+    LOGGER.infof("Warehouse %s created at %s", warehouse.businessUnitCode, warehouse.location);
   }
 }

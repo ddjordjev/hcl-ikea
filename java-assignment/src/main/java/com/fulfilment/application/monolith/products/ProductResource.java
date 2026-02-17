@@ -1,7 +1,5 @@
 package com.fulfilment.application.monolith.products;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,8 +13,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 import org.jboss.logging.Logger;
 
@@ -26,9 +22,9 @@ import org.jboss.logging.Logger;
 @Consumes("application/json")
 public class ProductResource {
 
-  @Inject ProductRepository productRepository;
+  private static final Logger LOGGER = Logger.getLogger(ProductResource.class);
 
-  private static final Logger LOGGER = Logger.getLogger(ProductResource.class.getName());
+  @Inject ProductRepository productRepository;
 
   @GET
   public List<Product> get() {
@@ -38,6 +34,7 @@ public class ProductResource {
   @GET
   @Path("{id}")
   public Product getSingle(Long id) {
+    LOGGER.debugf("Fetching product %d", id);
     Product entity = productRepository.findById(id);
     if (entity == null) {
       throw new WebApplicationException("Product with id of " + id + " does not exist.", 404);
@@ -53,6 +50,7 @@ public class ProductResource {
     }
 
     productRepository.persist(product);
+    LOGGER.infof("Created product %s", product.name);
     return Response.ok(product).status(201).build();
   }
 
@@ -76,6 +74,7 @@ public class ProductResource {
     entity.stock = product.stock;
 
     productRepository.persist(entity);
+    LOGGER.infof("Updated product %d", id);
 
     return entity;
   }
@@ -89,32 +88,8 @@ public class ProductResource {
       throw new WebApplicationException("Product with id of " + id + " does not exist.", 404);
     }
     productRepository.delete(entity);
+    LOGGER.infof("Deleted product %d", id);
     return Response.status(204).build();
   }
 
-  @Provider
-  public static class ErrorMapper implements ExceptionMapper<Exception> {
-
-    @Inject ObjectMapper objectMapper;
-
-    @Override
-    public Response toResponse(Exception exception) {
-      LOGGER.error("Failed to handle request", exception);
-
-      int code = 500;
-      if (exception instanceof WebApplicationException) {
-        code = ((WebApplicationException) exception).getResponse().getStatus();
-      }
-
-      ObjectNode exceptionJson = objectMapper.createObjectNode();
-      exceptionJson.put("exceptionType", exception.getClass().getName());
-      exceptionJson.put("code", code);
-
-      if (exception.getMessage() != null) {
-        exceptionJson.put("error", exception.getMessage());
-      }
-
-      return Response.status(code).entity(exceptionJson).build();
-    }
-  }
 }

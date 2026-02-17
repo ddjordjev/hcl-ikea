@@ -68,6 +68,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jacoco</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -178,6 +183,25 @@
                     </execution>
 
                     <execution>
+                        <id>prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                        <configuration>
+                            <destFile>${project.build.directory}/jacoco.exec</destFile>
+                            <append>true</append>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>report-all</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
                         <id>check</id>
                         <phase>verify</phase>
                         <goals>
@@ -190,6 +214,10 @@
                                     <includes>
                                         <include>com.fulfilment.application.monolith.location</include>
                                         <include>com.fulfilment.application.monolith.warehouses.domain.usecases</include>
+                                        <include>com.fulfilment.application.monolith.warehouses.adapters.database</include>
+                                        <include>com.fulfilment.application.monolith.fulfillment</include>
+                                        <include>com.fulfilment.application.monolith.products</include>
+                                        <include>com.fulfilment.application.monolith.stores</include>
                                     </includes>
                                     <limits>
                                         <limit>

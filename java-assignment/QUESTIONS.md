@@ -58,11 +58,11 @@ Which types of tests would you focus on, and how would you ensure test coverage 
 **Answer:**
 ```txt
 
-There should always be Domain unit tests (e.g. CreateWarehouseUseCaseTest, ReplaceWarehouseUseCaseTest, ArchiveWarehouseUseCaseTest). 
+There should always be Domain unit tests (e.g. CreateWarehouseTest, ReplaceWarehouseTest, ArchiveWarehouseTest). 
 These are the highest-value tests because they validate core business rules in isolation — no database, no HTTP server, sub-second execution.
 And these need to be written and done during the development process.
 
-Next in line are REST endpoint integration tests (e.g. FulfillmentEndpointTest, ProductEndpointTest). These exercise the full HTTP → Resource → Use Case → Database 
+Next in line are REST endpoint integration tests (e.g. FulfillmentEndpointIT, ProductEndpointIT). These exercise the full HTTP → Resource → Use Case → Database 
 stack using @QuarkusTest + REST Assured. They catch wiring issues (CDI injection, @Transactional boundaries, JSON serialization) that unit tests cannot.
 They should be smaller in numbers of course but in my opinion they are extremely valuable and often are able to catch bugs that unit tests cannot.
 
