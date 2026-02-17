@@ -56,19 +56,19 @@
         <td><strong>3a</strong></td>
         <td><strong>Warehouse</strong> <span class="badge badge-must">Must have</span><br>Implement Create, Replace, Archive use cases and API endpoints</td>
         <td><span class="badge badge-done">Done</span></td>
-        <td>Three use-case classes (<code>CreateWarehouseUseCase</code>, <code>ReplaceWarehouseUseCase</code>, <code>ArchiveWarehouseUseCase</code>) implement the port interfaces. <code>WarehouseResourceImpl</code> wires all 5 OpenAPI-generated endpoints with <code>@Transactional</code>. <code>WarehouseRepository</code> provides full CRUD via Panache.</td>
+        <td>Three classes (<code>CreateWarehouse</code>, <code>ReplaceWarehouse</code>, <code>ArchiveWarehouse</code>) implement the port interfaces. <code>WarehouseResourceImpl</code> wires all 5 OpenAPI-generated endpoints with <code>@Transactional</code>. <code>WarehouseRepository</code> provides full CRUD via Panache.</td>
       </tr>
       <tr>
         <td><strong>3b</strong></td>
         <td>Business Unit Code uniqueness</td>
         <td><span class="badge badge-done">Done</span></td>
-        <td><code>CreateWarehouseUseCase</code> checks <code>findByBusinessUnitCode</code> &mdash; returns 409 if duplicate.</td>
+        <td><code>CreateWarehouse</code> checks <code>findByBusinessUnitCode</code> &mdash; returns 409 if duplicate.</td>
       </tr>
       <tr>
         <td><strong>3c</strong></td>
         <td>Location validation</td>
         <td><span class="badge badge-done">Done</span></td>
-        <td><code>CreateWarehouseUseCase</code> calls <code>locationResolver.resolveByIdentifier</code> &mdash; returns 422 if invalid.</td>
+        <td><code>CreateWarehouse</code> calls <code>locationResolver.resolveByIdentifier</code> &mdash; returns 422 if invalid.</td>
       </tr>
       <tr>
         <td><strong>3d</strong></td>
@@ -86,13 +86,13 @@
         <td><strong>3f</strong></td>
         <td>Replacement: capacity accommodation</td>
         <td><span class="badge badge-done">Done</span></td>
-        <td><code>ReplaceWarehouseUseCase</code> checks <code>newCapacity &gt;= currentStock</code> &mdash; returns 422 if too small.</td>
+        <td><code>ReplaceWarehouse</code> checks <code>newCapacity &gt;= currentStock</code> &mdash; returns 422 if too small.</td>
       </tr>
       <tr>
         <td><strong>3g</strong></td>
         <td>Replacement: stock matching</td>
         <td><span class="badge badge-done">Done</span></td>
-        <td><code>ReplaceWarehouseUseCase</code> checks <code>newStock == currentStock</code> &mdash; returns 422 on mismatch.</td>
+        <td><code>ReplaceWarehouse</code> checks <code>newStock == currentStock</code> &mdash; returns 422 on mismatch.</td>
       </tr>
       <tr>
         <td><strong>Bonus</strong></td>
