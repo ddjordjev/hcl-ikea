@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requirements Summary &amp; What Was Done</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif; line-height: 1.6; color: #1a1a2e; background: #f8f9fa; padding: 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: #0a1628; }
+    h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; color: #16213e; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.4rem; }
+    h3 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; color: #334155; }
+    p { margin-bottom: 0.5rem; color: #475569; font-size: 0.92rem; }
+    .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 2rem; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.88rem; }
+    th { background: #1e293b; color: #f1f5f9; text-align: left; padding: 0.6rem 0.8rem; font-weight: 600; }
+    td { padding: 0.55rem 0.8rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:hover td { background: #f1f5f9; }
+    .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
+    .badge-done { background: #dcfce7; color: #166534; }
+    .badge-must { background: #fef3c7; color: #92400e; font-size: 0.72rem; }
+    .badge-bonus { background: #ede9fe; color: #5b21b6; font-size: 0.72rem; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.84rem; color: #be185d; }
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }
+    .section-icon { margin-right: 0.4rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Complete Requirements Summary &amp; What Was Done</h1>
+  <p class="subtitle">HCL IKEA Test &mdash; Warehouse Colocation Management System</p>
+
+  <!-- ============================================================ -->
+  <h2><span class="section-icon">&#128221;</span> CODE_ASSIGNMENT.md &mdash; Implementation Tasks</h2>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Requirement</th><th>Status</th><th>What Was Done</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td><strong>Location</strong> <span class="badge badge-must">Must have</span><br>Implement <code>resolveByIdentifier</code> in <code>LocationGateway</code></td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Case-insensitive lookup against a static list of 8 locations, with null/blank safety. Returns the matching <code>Location</code> or <code>null</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td><strong>Store</strong> <span class="badge badge-must">Must have</span><br>Ensure <code>LegacyStoreManagerGateway</code> calls happen after DB commit</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Introduced <code>TransactionSynchronizationRegistry</code> in <code>StoreResource</code>. A <code>runAfterCommit()</code> helper registers an <code>afterCompletion</code> callback that only fires when <code>STATUS_COMMITTED</code>. Applied to all 4 mutating endpoints (create, update, patch, delete).</td>
+      </tr>
+      <tr>
+        <td><strong>3a</strong></td>
+        <td><strong>Warehouse</strong> <span class="badge badge-must">Must have</span><br>Implement Create, Replace, Archive use cases and API endpoints</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Three use-case classes (<code>CreateWarehouseUseCase</code>, <code>ReplaceWarehouseUseCase</code>, <code>ArchiveWarehouseUseCase</code>) implement the port interfaces. <code>WarehouseResourceImpl</code> wires all 5 OpenAPI-generated endpoints with <code>@Transactional</code>. <code>WarehouseRepository</code> provides full CRUD via Panache.</td>
+      </tr>
+      <tr>
+        <td><strong>3b</strong></td>
+        <td>Business Unit Code uniqueness</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>CreateWarehouseUseCase</code> checks <code>findByBusinessUnitCode</code> &mdash; returns 409 if duplicate.</td>
+      </tr>
+      <tr>
+        <td><strong>3c</strong></td>
+        <td>Location validation</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>CreateWarehouseUseCase</code> calls <code>locationResolver.resolveByIdentifier</code> &mdash; returns 422 if invalid.</td>
+      </tr>
+      <tr>
+        <td><strong>3d</strong></td>
+        <td>Max warehouses per location</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Counts active (non-archived) warehouses at the location, rejects if <code>&gt;= maxNumberOfWarehouses</code> (422).</td>
+      </tr>
+      <tr>
+        <td><strong>3e</strong></td>
+        <td>Capacity and stock validation</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Checks total capacity at location against <code>maxCapacity</code>, and <code>stock &lt;= capacity</code> &mdash; returns 422 on violation.</td>
+      </tr>
+      <tr>
+        <td><strong>3f</strong></td>
+        <td>Replacement: capacity accommodation</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>ReplaceWarehouseUseCase</code> checks <code>newCapacity &gt;= currentStock</code> &mdash; returns 422 if too small.</td>
+      </tr>
+      <tr>
+        <td><strong>3g</strong></td>
+        <td>Replacement: stock matching</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>ReplaceWarehouseUseCase</code> checks <code>newStock == currentStock</code> &mdash; returns 422 on mismatch.</td>
+      </tr>
+      <tr>
+        <td><strong>Bonus</strong></td>
+        <td><strong>Fulfillment associations</strong> <span class="badge badge-bonus">Nice to have</span><br>Associate Warehouses as fulfillment units for Products to Stores</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>New <code>fulfillment</code> package: <code>FulfillmentAssignment</code> JPA entity, <code>FulfillmentRepository</code> with aggregate count queries, <code>FulfillmentResource</code> REST API with 6 endpoints. Three constraints enforced: max 2 warehouses/product/store, max 3 warehouses/store, max 5 products/warehouse.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ============================================================ -->
+  <h2><span class="section-icon">&#10067;</span> QUESTIONS.md &mdash; Written Answers</h2>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Question</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Database access strategies &mdash; would you refactor?<br><em>Explained the 3 patterns (Active Record, Repository, Hexagonal), recommended aligning toward hexagonal for domain-heavy areas.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>OpenAPI-first vs Code-first &mdash; pros/cons and preference<br><em>Listed trade-offs for each, recommended OpenAPI-first for multi-consumer APIs, code-first with annotations for internal CRUD.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Testing prioritization and coverage strategy<br><em>Prioritized domain unit tests &gt; endpoint integration tests &gt; smoke ITs, with JaCoCo enforcement and CI pipeline for regression.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ============================================================ -->
+  <h2><span class="section-icon">&#128218;</span> CASE_STUDY.md &mdash; Scenario Discussions</h2>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Scenario</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td><strong>Cost Allocation and Tracking</strong><br><em>Discussed shared-cost attribution challenges, asked clarifying questions about granularity, proposed <code>CostEntry</code> entity tied to Business Unit Code.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td><strong>Cost Optimization Strategies</strong><br><em>Proposed warehouse-to-store assignment optimization, capacity balancing, replacement timing, product consolidation. Outlined a data-driven prioritization approach.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td><strong>Integration with Financial Systems</strong><br><em>Covered event-driven architecture (transactional outbox), idempotent consumers, schema contracts, nightly reconciliation.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td><strong>Budgeting and Forecasting</strong><br><em>Discussed historical data foundation using BU Code, demand signal inputs, scenario modeling, budget-vs-actual tracking.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td><strong>Cost Control in Warehouse Replacement</strong><br><em>Explained why BU Code continuity preserves cost history, linked to stock matching/capacity accommodation validations, discussed transition-period budgeting.</em></td>
+        <td><span class="badge badge-done">Done</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ============================================================ -->
+  <h2><span class="section-icon">&#128231;</span> Email Requirements</h2>
+
+  <table>
+    <thead>
+      <tr><th>Requirement</th><th>Status</th><th>What Was Done</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Implement code changes for all tasks</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>All 3 must-have tasks + bonus task implemented.</td>
+      </tr>
+      <tr>
+        <td>Unit tests (positive, negative, error)</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><strong>46 tests total</strong> &mdash; 22 unit tests (surefire) + 24 integration tests (failsafe). Cover happy paths, validation rejections, constraint violations, 404s, 409s, 422s.</td>
+      </tr>
+      <tr>
+        <td>JaCoCo 80%+ coverage</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>JaCoCo enforces 80% minimum on <code>location</code> and <code>warehouses.domain.usecases</code> packages. <code>mvn verify</code> confirms &ldquo;All coverage checks have been met.&rdquo; Agent attached to both surefire and failsafe for merged coverage.</td>
+      </tr>
+      <tr>
+        <td>Code Quality &amp; Coding Standards</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>Hexagonal architecture for warehouses (ports/adapters/use cases), repository pattern for products/fulfillment, proper separation of concerns, consistent code style.</td>
+      </tr>
+      <tr>
+        <td>Exception Handling &amp; Logging</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>WebApplicationException</code> with correct HTTP status codes (404/409/422/500) throughout. <code>Logger</code> used in <code>StoreResource</code>, <code>LegacyStoreManagerGateway</code>, <code>FulfillmentResource</code>. Global <code>ErrorMapper</code> providers in Store and Product resources.</td>
+      </tr>
+      <tr>
+        <td>Case study documentation</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>All 5 scenarios answered with challenges, questions, and technical considerations.</td>
+      </tr>
+      <tr>
+        <td>CI/CD pipelines (good-to-have)</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td>GitHub Actions workflow (<code>.github/workflows/ci.yml</code>) with 2 jobs: build-and-test (compile + unit/integration tests + JaCoCo) and health-check (start app, verify <code>/q/health</code> and all API endpoints).</td>
+      </tr>
+      <tr>
+        <td>Health checks (good-to-have)</td>
+        <td><span class="badge badge-done">Done</span></td>
+        <td><code>quarkus-smallrye-health</code> dependency provides <code>/q/health</code>, <code>/q/health/live</code>, <code>/q/health/ready</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ============================================================ -->
+  <h2><span class="section-icon">&#128736;</span> Additional Improvements Made</h2>
+
+  <table>
+    <thead>
+      <tr><th>Item</th><th>What Was Done</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Java version fix</td>
+        <td>Fixed conflicting <code>&lt;source&gt;11&lt;/source&gt;/&lt;target&gt;11&lt;/target&gt;</code> vs <code>&lt;maven.compiler.release&gt;17&lt;/maven.compiler.release&gt;</code> &mdash; unified to <code>&lt;release&gt;17&lt;/release&gt;</code>.</td>
+      </tr>
+      <tr>
+        <td>Test naming convention</td>
+        <td>Renamed <code>FulfillmentEndpointTest</code> and <code>ProductEndpointTest</code> to <code>*IT.java</code> so integration tests run in the failsafe phase, unit tests in surefire.</td>
+      </tr>
+      <tr>
+        <td>JaCoCo integration-test support</td>
+        <td>Added <code>prepare-agent-integration</code> appending to the same <code>jacoco.exec</code>, moved report generation to <code>post-integration-test</code> for merged coverage.</td>
+      </tr>
+      <tr>
+        <td>README.md</td>
+        <td>Rewritten with prerequisites, quick-start steps, full API endpoint reference, project structure, DB config, CI/CD docs, and troubleshooting.</td>
+      </tr>
+      <tr>
+        <td>Root README</td>
+        <td>Updated to point to the correct paths and provide a 3-line quick start.</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

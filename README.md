@@ -1,9 +1,24 @@
-## About the assignment
+# HCL IKEA Test — Warehouse Colocation Management
 
-You will find the tasks of this assignment on [CODE_ASSIGNMENT](assignment/CODE_ASSIGNMENT.md) file
+## Repository structure
 
-## About the code base
+| Directory | Description |
+|-----------|-------------|
+| `java-assignment/` | Main application — Quarkus + Java 17 + PostgreSQL. See [java-assignment/README.md](java-assignment/README.md) for full setup and run instructions. |
+| `case-study/` | Case study scenarios and domain briefing. See [case-study/CASE_STUDY.md](case-study/CASE_STUDY.md). |
+| `.github/workflows/` | CI/CD pipeline (GitHub Actions). |
 
-Some of this code here is based on https://github.com/quarkusio/quarkus-quickstarts
+## Quick start
 
+```sh
+# 1. Start the PostgreSQL database
+docker-compose up -d
 
+# 2. Run the application in dev mode
+cd java-assignment
+mvn quarkus:dev
+```
+
+The app is available at [http://localhost:8080](http://localhost:8080).
+
+For detailed instructions (building, testing, API reference), see **[java-assignment/README.md](java-assignment/README.md)**.
