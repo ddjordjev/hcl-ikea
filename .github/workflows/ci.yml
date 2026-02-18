@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+env:
+  DB_USER: ${{ vars.DB_USER || 'quarkus_test' }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'quarkus_test' }}
+  DB_NAME: ${{ vars.DB_NAME || 'quarkus_test' }}
+  DB_PORT: ${{ vars.DB_PORT || '15432' }}
+
 jobs:
   build-and-test:
     name: Build, Test & Verify
@@ -15,13 +21,13 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: quarkus_test
-          POSTGRES_PASSWORD: quarkus_test
-          POSTGRES_DB: quarkus_test
+          POSTGRES_USER: ${{ vars.DB_USER || 'quarkus_test' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD || 'quarkus_test' }}
+          POSTGRES_DB: ${{ vars.DB_NAME || 'quarkus_test' }}
         ports:
-          - 15432:5432
+          - ${{ vars.DB_PORT || '15432' }}:5432
         options: >-
-          --health-cmd "pg_isready -U quarkus_test"
+          --health-cmd "pg_isready -U ${{ vars.DB_USER || 'quarkus_test' }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -73,13 +79,13 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: quarkus_test
-          POSTGRES_PASSWORD: quarkus_test
-          POSTGRES_DB: quarkus_test
+          POSTGRES_USER: ${{ vars.DB_USER || 'quarkus_test' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD || 'quarkus_test' }}
+          POSTGRES_DB: ${{ vars.DB_NAME || 'quarkus_test' }}
         ports:
-          - 15432:5432
+          - ${{ vars.DB_PORT || '15432' }}:5432
         options: >-
-          --health-cmd "pg_isready -U quarkus_test"
+          --health-cmd "pg_isready -U ${{ vars.DB_USER || 'quarkus_test' }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -100,7 +106,7 @@ jobs:
 
       - name: Start application
         run: |
-          java -jar target/quarkus-app/quarkus-run.jar &
+          QUARKUS_PROFILE=test java -jar target/quarkus-app/quarkus-run.jar &
           echo $! > app.pid
           sleep 15
 
