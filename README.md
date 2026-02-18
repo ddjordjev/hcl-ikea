@@ -1,24 +1,66 @@
-# HCL IKEA Test — Warehouse Colocation Management
+# Java Code Assignment — Warehouse Colocation Management
 
-## Repository structure
+Quarkus 3.13, Java 17, Hibernate ORM with Panache, PostgreSQL 15.
 
-| Directory | Description |
-|-----------|-------------|
-| `java-assignment/` | Main application — Quarkus + Java 17 + PostgreSQL. See [java-assignment/README.md](java-assignment/README.md) for full setup and run instructions. |
-| `case-study/` | Case study scenarios and domain briefing. See [case-study/CASE_STUDY.md](case-study/CASE_STUDY.md). |
-| `.github/workflows/` | CI/CD pipeline (GitHub Actions). |
+Tasks and requirements: [docs/CODE_ASSIGNMENT.md](docs/CODE_ASSIGNMENT.md)
+Questions answers: [docs/QUESTIONS.md](docs/QUESTIONS.md)
+Case study: [docs/case-study/CASE_STUDY.md](docs/case-study/CASE_STUDY.md)
 
-## Quick start
+## Prerequisites
+
+- JDK 17+
+- Maven 3.6+
+- Docker (for PostgreSQL)
+
+## Running locally
+
+Start the database:
 
 ```sh
-# 1. Start the PostgreSQL database
 docker-compose up -d
-
-# 2. Run the application in dev mode
-cd java-assignment
-mvn quarkus:dev
 ```
 
-The app is available at [http://localhost:8080](http://localhost:8080).
+Then:
 
-For detailed instructions (building, testing, API reference), see **[java-assignment/README.md](java-assignment/README.md)**.
+```sh
+# Dev mode with live reload
+mvn quarkus:dev
+
+# Or compile + run as jar
+mvn package -DskipTests
+java -jar target/quarkus-app/quarkus-run.jar
+```
+
+App runs at http://localhost:8080
+
+## Running tests
+
+```sh
+mvn test           # unit tests only
+mvn verify         # unit + integration tests + JaCoCo coverage check
+```
+
+Coverage report: `target/site/jacoco/index.html`
+Coverage threshold: 80% on `location` and `warehouses.domain.usecases` packages.
+
+## API overview
+
+| Resource    | Base path      | Key operations                               |
+|-------------|----------------|----------------------------------------------|
+| Warehouse   | `/warehouse`   | CRUD + archive + replace (OpenAPI-generated) |
+| Product     | `/product`     | CRUD                                         |
+| Store       | `/store`       | CRUD + partial update                        |
+| Fulfillment | `/fulfillment` | Associate warehouses to products for stores  |
+| Health      | `/q/health`    | Liveness + readiness probes                  |
+
+Fulfillment constraints: max 2 warehouses per product per store, max 3 warehouses per store, max 5 product types per
+warehouse.
+
+## Database
+
+PostgreSQL on port 15432 (`quarkus_test` / `quarkus_test` / `quarkus_test`).
+Schema is `drop-and-create` — recreated on every startup with seed data from `import.sql`.
+
+## CI/CD
+
+GitHub Actions pipeline (`.github/workflows/ci.yml`): compile, test, coverage check, health check.

@@ -6,6 +6,8 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "=========================================="
 echo "HCL IKEA Test - Complete Setup"
 echo "=========================================="
@@ -16,13 +18,7 @@ echo "Step 1: Checking Docker installation..."
 if ! command -v docker &> /dev/null; then
     echo "✗ Docker is not installed"
     echo ""
-    echo "Please complete Docker Desktop installation:"
-    echo "1. The Docker.dmg file should have opened in Finder"
-    echo "2. Drag Docker icon to Applications folder"
-    echo "3. Launch Docker from Applications"
-    echo "4. Wait for it to fully start (Docker icon in menu bar)"
-    echo ""
-    echo "Then run this script again."
+    echo "Please install Docker Desktop and run this script again."
     exit 1
 fi
 echo "✓ Docker is installed"
@@ -37,12 +33,7 @@ while ! docker ps &> /dev/null; do
     RETRY_COUNT=$((RETRY_COUNT + 1))
     if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
         echo "✗ Docker daemon failed to start after 30 seconds"
-        echo ""
-        echo "Make sure Docker Desktop is running:"
-        echo "1. Go to Applications"
-        echo "2. Double-click Docker.app"
-        echo "3. Enter your password if prompted"
-        echo "4. Wait for Docker icon to appear in menu bar"
+        echo "Make sure Docker Desktop is running."
         exit 1
     fi
     echo -n "."
@@ -54,7 +45,7 @@ echo "✓ Docker daemon is running"
 # Step 3: Start PostgreSQL
 echo ""
 echo "Step 3: Starting PostgreSQL with Docker Compose..."
-cd /Users/damirdjordjev/workspace/hcl-ikea-test
+cd "$SCRIPT_DIR"
 
 if [ ! -f "docker-compose.yml" ]; then
     echo "✗ docker-compose.yml not found"
@@ -75,11 +66,7 @@ while ! docker exec hcl-ikea-postgres pg_isready -U quarkus_test &> /dev/null; d
     RETRY_COUNT=$((RETRY_COUNT + 1))
     if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
         echo "✗ PostgreSQL failed to start"
-        echo ""
-        echo "Troubleshooting:"
-        echo "1. Check logs: docker-compose logs postgres"
-        echo "2. Restart: docker-compose restart"
-        echo "3. Reset: docker-compose down -v && docker-compose up -d"
+        echo "Troubleshooting: docker-compose logs postgres"
         exit 1
     fi
     echo -n "."
@@ -102,12 +89,9 @@ echo "  User: quarkus_test"
 echo "  Password: quarkus_test"
 echo ""
 echo "Next steps:"
-echo "  1) Start the DB (already running): ${COMPOSE_CMD[*]} -f $COMPOSE_FILE up -d"
-echo "  2) Run the app (from the module directory), e.g.:"
-echo "       cd java-assignment"
-echo "       ./mvnw quarkus:dev"
+echo "  1) Run the app:  mvn quarkus:dev"
+echo "  2) Run tests:    mvn verify"
 echo ""
 echo "To stop PostgreSQL:"
-echo "  ${COMPOSE_CMD[*]} -f $COMPOSE_FILE down"
+echo "  docker-compose down"
 echo ""
-

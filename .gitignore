@@ -1,3 +1,6 @@
+# Cursor AI rules (personal, not shared via git)
+.cursor/
+
 # IDE and Editor
 .idea/
 .vscode/

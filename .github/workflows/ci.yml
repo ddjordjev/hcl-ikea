@@ -38,15 +38,12 @@ jobs:
           cache: maven
 
       - name: Compile
-        working-directory: java-assignment
         run: mvn compile
 
       - name: Run unit tests
-        working-directory: java-assignment
         run: mvn test
 
       - name: Run integration tests & JaCoCo coverage check
-        working-directory: java-assignment
         run: mvn verify -Dskip.surefire.tests=true
 
       - name: Upload JaCoCo coverage report
@@ -54,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: java-assignment/target/site/jacoco/
+          path: target/site/jacoco/
           retention-days: 14
 
       - name: Upload test results
@@ -63,8 +60,8 @@ jobs:
         with:
           name: test-results
           path: |
-            java-assignment/target/surefire-reports/
-            java-assignment/target/failsafe-reports/
+            target/surefire-reports/
+            target/failsafe-reports/
           retention-days: 14
 
   health-check:
@@ -99,11 +96,9 @@ jobs:
           cache: maven
 
       - name: Build application
-        working-directory: java-assignment
         run: mvn package -DskipTests
 
       - name: Start application
-        working-directory: java-assignment
         run: |
           java -jar target/quarkus-app/quarkus-run.jar &
           echo $! > app.pid
@@ -136,7 +131,6 @@ jobs:
 
       - name: Stop application
         if: always()
-        working-directory: java-assignment
         run: |
           if [ -f app.pid ]; then
             kill $(cat app.pid) || true

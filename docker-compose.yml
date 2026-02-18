@@ -13,7 +13,7 @@ services:
       - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./java-assignment/src/main/resources/import.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./src/main/resources/import.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quarkus_test"]
       interval: 10s
